@@ -8,6 +8,8 @@ output: html_document
 ```{r message = FALSE}
 library(tidyverse)
 library(magrittr)
+library(nlme)
+library(mgcv)
 
 aids <- read_csv(here::here("data/aids.csv"))
 
@@ -27,7 +29,7 @@ There are 4 relevant covariates: treatment, age, gender, and week. The response 
 # spaghetti plot
 aids %>% 
   ggplot(aes(x = week, y = log_cd4, group = id, color = treatment)) +
-  geom_point() +
+  geom_point() + 
   geom_line()
 ```
 The data is unbalanced, measurements were not taken at the same occasions. Therefore, Analysis of Response Profiles cannot be used.
@@ -36,7 +38,7 @@ The data is unbalanced, measurements were not taken at the same occasions. There
 ```{r}
 summary(aids)
 ```
-The dataset is overwhelmingly male, in accordance with how males make up the majority of those suffering from AIDS. The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. Although counting distinct ids give a figure of `r num_of_subjects`
+The dataset is overwhelmingly male, in accordance with how males make up the majority of those suffering from AIDS. The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. Although counting distinct ids give a figure of `r num_of_subjects`, we see instead that the max id is 1313, meaning that some ids may be missing.
 
 ### Bivariate Summaries
 ```{r}
@@ -44,9 +46,31 @@ The dataset is overwhelmingly male, in accordance with how males make up the maj
 ```
 
 
-### Outliers
+### Outliers of each variable
 
 ```{r}
-
+# age
+aids %>% 
+  group_by(id) %>% 
+  summarize(age = mean(age)) %>% 
+  ggplot(aes(x = age)) +
+  geom_histogram()
 ```
+The data with regards to age is right-skewed, but approximately normal. There are no apparent outliers.
+```{r}
+# number of observations per subject
+aids %>% 
+  group_by(id) %>% 
+  count() %>%
+  mutate(n = factor(n, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9"))) %>% 
+  ggplot(aes(x = n)) + 
+  geom_bar() + 
+  labs(x = "Observations per individual")
 
+over_6 <- aids %>% 
+  group_by(id) %>% 
+  count() %>%
+  filter(n > 6) %>% 
+  nrow()
+```
+In terms of how many measurements were taken for each individual, there are `r over_6` individuals who have more than 6 measurements.
