@@ -1,0 +1,41 @@
+---
+title: "Exploratory Data Analysis"
+author: "Hagen Atkeson"
+date: "5/7/2021"
+output: html_document
+---
+
+```{r message = FALSE}
+library(tidyverse)
+library(magrittr)
+
+aids <- read_csv(here::here("data/aids.csv"))
+
+# change treatment to factor
+aids %<>% 
+  mutate(treatment = factor(treatment))
+
+glimpse(aids)
+
+# number of participants
+num_of_subjects <- aids %>% 
+  group_by(id) %>% 
+  count() %>% 
+  nrow()
+```
+There are 4 relevant covariates: treatment, age, gender, and week. The response variable is log_cd4. There are `r num_of_subjects` subjects.
+
+```{r}
+# spaghetti plot
+aids %>% 
+  ggplot(aes(x = week, y = log_cd4, group = id, color = treatment)) +
+  geom_point() +
+  geom_line()
+```
+The data is unbalanced, measurements were not taken at the same occasions. Therefore, Analysis of Response Profiles cannot be used.
+
+### Univariate Summaries
+```{r}
+summary(aids)
+```
+
