@@ -1,6 +1,6 @@
 ---
 title: "Exploratory Data Analysis"
-author: "Hagen Atkeson"
+author: "Hagen Atkeson, Mandy Woo"
 date: "5/7/2021"
 output: html_document
 ---
@@ -36,4 +36,4 @@ The data is unbalanced, measurements were not taken at the same occasions. There
 ```{r}
 summary(aids)
 ```
-
+The dataset is overwhelmingly male, in accordance with how males make up the majority of those suffering from AIDS. The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. Although counting distinct ids give a figure of `r num_of_subjects`
