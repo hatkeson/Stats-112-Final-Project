@@ -13,15 +13,13 @@ aids <- read_csv(here::here("data/aids.csv"))
 
 # change treatment to factor
 aids %<>% 
-  mutate(treatment = factor(treatment))
+  mutate(treatment = factor(treatment),
+         gender = factor(gender))
 
 glimpse(aids)
 
 # number of participants
-num_of_subjects <- aids %>% 
-  group_by(id) %>% 
-  count() %>% 
-  nrow()
+num_of_subjects <- n_distinct(aids$id)
 ```
 There are 4 relevant covariates: treatment, age, gender, and week. The response variable is log_cd4. There are `r num_of_subjects` subjects.
 
