@@ -1,8 +1,10 @@
 ---
 title: "Exploratory Data Analysis"
-author: "Hagen Atkeson, Mandy Woo"
+author: "Hagen Atkeson, Mandy Woo, Allison Dayoan"
 date: "5/7/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r message = FALSE}
@@ -10,6 +12,7 @@ library(tidyverse)
 library(magrittr)
 library(nlme)
 library(mgcv)
+library(GGally)
 
 aids <- read_csv(here::here("data/aids.csv"))
 
@@ -40,13 +43,74 @@ summary(aids)
 ```
 The dataset is overwhelmingly male, in accordance with how males make up the majority of those suffering from AIDS. The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. Although counting distinct ids give a figure of `r num_of_subjects`, we see instead that the max id is 1313, meaning that some ids may be missing.
 
-### Bivariate Summaries
-```{r}
 
+Some univariate graphs depicting the distribution of ages, weeks, and genders studied:
+```{r}
+aids %>% 
+  ggplot(aes(x = age)) +
+  geom_histogram() +
+  labs(x = "Age (Years)")
+
+aids %>% 
+  ggplot(aes(x = week)) +
+  geom_histogram() +
+  labs(x = "Time Since Baseline (weeks)")
+
+aids %>% 
+  ggplot(aes(x = gender)) +
+  geom_bar() +
+  labs(x = "Gender")
 ```
 
+### Bivariate Summaries
 
-### Outliers of each variable
+Relationship between covariates:
+```{r}
+ggpairs(aids, columns = c("treatment", "age", "week", "gender", "log_cd4"))
+```
+
+CD4 counts over time, grouped by gender:
+```{r}
+aids <- aids %>% 
+  group_by(id) %>% 
+  mutate(occasion = row_number())
+
+aids %>% 
+  group_by(treatment, gender, occasion) %>% 
+  summarize(mean_cd4 = mean(log_cd4)) %>% 
+  ggplot(aes(x = occasion, y = mean_cd4, color = factor(treatment))) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Occasion", y = "Mean Log Transformed CD4 Counts (cells/mm^3)", color = "Treatment Group") +
+  facet_wrap(~ gender)
+```
+Treatment group 4 significantly decreases female CD4 count, while the same can be said about treatment group 2 for males.  Overall, Treatment group 3 increases average CD4 counts most for females, and all treatments decrease average CD4 counts for males.
+
+
+CD4 counts over time, grouped by age:
+```{r}
+aids <- aids %>% 
+  mutate(age_group = case_when(age > 70 ~ "70+",
+                               70 >= age & age > 60 ~ "60-70", 
+                               60 >= age & age > 50 ~ "50-60", 
+                               50 >= age & age > 40 ~ "40-50", 
+                               40 >= age & age > 30 ~ "30-40", 
+                               30 >= age & age > 20 ~ "20-30", 
+                               20 >= age ~ "less than 20"))
+
+aids %>% 
+  group_by(treatment, age_group, occasion) %>% 
+  summarize(mean_cd4 = mean(log_cd4)) %>% 
+  ggplot(aes(x = occasion, y = mean_cd4, color = age_group)) +
+  geom_point() +
+  geom_line()+
+  labs(x = "Occasion", y = "Mean Log Transformed CD4 Counts (cells/mm^3)", color = "Age") +
+  facet_wrap(~ treatment)
+```
+Treatments 3 and 4 increase the average log CD4 count for the 60-70 age group.  Treatment 3 works best for the 20-30 age group.  For the 30-40 and 40-50 age group, all the treatments decreased average log CD4 count.  For the < 20 age group, only the 2nd treatment group increased average log CD4 count, but there are not many individuals in this age group studied.
+
+
+### Outliers
 
 ```{r}
 # age
