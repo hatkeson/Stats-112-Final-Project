@@ -12,7 +12,7 @@ library(nlme)
 library(here)
 ```
 
-As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited than a general least squares model. According to the exploratory data analysis, the interaction between treatment and gender, and treatment and age are potentially interesting. Here we shall test if they are needed.
+As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited to the data than a general least squares model. According to the exploratory data analysis, the interaction between treatment and gender, and treatment and age are potentially interesting. Here we shall test if they are needed.
 ```{r}
 aids <- read_csv(here::here("data/aids.csv"))
 
