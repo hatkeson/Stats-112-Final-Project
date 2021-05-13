@@ -1,0 +1,26 @@
+---
+title: "Modeling (GLS, LME)"
+author: "Hagen Atkeson"
+date: "5/12/2021"
+output: html_document
+---
+
+```{r warning = FALSE, message = FALSE}
+library(tidyverse)
+library(magrittr)
+library(nlme)
+library(here)
+```
+
+As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited than a general least squares model.
+```{r}
+aids <- read_csv(here::here("data/aids.csv"))
+
+model_random_week <- lme(log_cd4 ~ week + treatment:week,
+                         data = aids,
+                         random = ~ week | id,
+                         method = "REML")
+
+summary(model_gls)
+```
+
