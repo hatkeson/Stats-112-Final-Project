@@ -41,11 +41,8 @@ The interaction terms have uneven significance across the treatments. Treatment 
 
 ```{r}
 aids <- aids %>% 
-  mutate(knot_term1 = if_else(week > 10, week, 0)) %>% 
+  mutate(knot_term1 = if_else(week >= 10 & week<20, week, 0)) %>% 
   relocate(knot_term1, .after = week)
-```
-
-```{r}
 # Linear Mixed Effects Model (linear splines) 
 ctrl <- lmeControl(opt='optim')
 model_splines <- lme(log_cd4 ~ week + knot_term1,
@@ -55,13 +52,20 @@ model_splines <- lme(log_cd4 ~ week + knot_term1,
                      control=ctrl)
 
 summary(model_splines)
-anova(model_rand, model_rand_interaction, model_splines)
-
+anova(model_rand, model_splines)
 ```
+$Equation: log\_cd4 = beta\_1 + beta\_2 * week + beta\_3 * knot\_term1 + b1 + b2 * week + b3 * knot\_term1$
+H0: beta_3 = 0
+HA: beta_3 != 0
+Test statistic: 47.79823
+p-value: < .0001
+There is statistical evidence that beta_3 != 0 and we should reject the null hypothesis.
+
+
 
 ```{r}
 aids <- aids %>% 
-  mutate(knot_term2 = if_else(week > 20, week, 0)) %>% 
+  mutate(knot_term2 = if_else(week >= 20 & week < 30, week, 0)) %>% 
   relocate(knot_term2, .after = knot_term1)
 # Linear Mixed Effects Model (linear splines) 
 ctrl <- lmeControl(opt='optim')
@@ -72,11 +76,19 @@ model_splines2 <- lme(log_cd4 ~ week + knot_term1 + knot_term2,
                      control=ctrl)
 
 summary(model_splines2)
-anova(model_rand, model_rand_interaction, model_splines, model_splines2)
+anova(model_rand, model_splines, model_splines2)
 ```
+$Equation: log\_cd4 = beta\_1 + beta\_2 * week + beta\_3 * knot\_term1 + beta\_4 * knot\_term2 + b1 + b2 * week + b3 * knot\_term1 + b4 * knot\_term2$
+H0: beta_4 = 0
+HA: beta_4 != 0
+Test statistic: 1.60680
+p-value: 0.9004
+There is no statistical evidence that beta_4 != 0 and we should not reject the null hypothesis.
+
+
 ```{r}
 aids <- aids %>% 
-  mutate(knot_term3 = if_else(week > 30, week, 0)) %>% 
+  mutate(knot_term3 = if_else(week >= 30, week, 0)) %>% 
   relocate(knot_term3, .after = knot_term2)
 # Linear Mixed Effects Model (linear splines) 
 ctrl <- lmeControl(opt='optim')
@@ -87,8 +99,15 @@ model_splines3 <- lme(log_cd4 ~ week + knot_term1 + knot_term2 + knot_term3,
                      control=ctrl)
 
 summary(model_splines3)
-anova(model_rand, model_rand_interaction, model_splines, model_splines2, model_splines3)
+anova(model_rand, model_splines, model_splines2, model_splines3)
 ```
+$Equation: log\_cd4 = beta\_1 + beta\_2 * week + beta\_3 * knot\_term1 + beta\_4 * knot\_term2 + beta\_5 * knot\_term3 + b1 + b2 * week + b3 * knot\_term1 + b4 * knot\_term2 + b5 * knot\_term3$
+H0: beta_5 = 0
+HA: beta_5 != 0
+Test statistic: 73.82745
+p-value: <.0001
+There is statistical evidence that beta_5 != 0 and we should reject the null hypothesis.
+
 
 
 ```{r}
