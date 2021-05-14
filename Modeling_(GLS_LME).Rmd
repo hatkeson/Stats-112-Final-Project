@@ -90,3 +90,35 @@ summary(model_splines3)
 anova(model_rand, model_rand_interaction, model_splines, model_splines2, model_splines3)
 ```
 
+
+```{r}
+aids <- aids %>% 
+  mutate(kt1 = if_else(week >= 10 & week<20 , week, 0))
+aids <- aids %>% 
+  mutate(kt2 = if_else(week >= 20 , week, 0))
+
+model2 <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment, 
+               data = aids, 
+               random = ~ week + kt1 + kt2|id, 
+               method = "REML", 
+               control = ctrl)
+model2_age <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment + age:treatment, 
+               data = aids, 
+               random = ~ week + kt1 + kt2|id, 
+               method = "REML", 
+               control = ctrl)
+summary(model2)
+summary(model2_age)
+
+model2_ml <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment, 
+               data = aids, 
+               random = ~ week + kt1 + kt2|id, 
+               method = "ML", 
+               control = ctrl)
+model2_age_ml <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment + age:treatment, 
+               data = aids, 
+               random = ~ week + kt1 + kt2|id, 
+               method = "ML", 
+               control = ctrl)
+anova(model_splines2, model2_ml, model2_age_ml)
+```
