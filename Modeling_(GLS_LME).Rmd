@@ -1,6 +1,6 @@
 ---
 title: "Modeling (GLS, LME)"
-author: "Hagen Atkeson"
+author: "Hagen Atkeson, Allison Mariko Dayoan, Mandy Woo"
 date: "5/12/2021"
 output: html_document
 ---
@@ -12,10 +12,14 @@ library(nlme)
 library(here)
 ```
 
-As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited to the data than a general least squares model. According to the exploratory data analysis, the interaction between treatment and gender, and treatment and age are potentially interesting. Here we shall test if they are needed.
+As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited to the data than a general least squares model. Here is the linear mixed effects model:  
+$E(log\_cd4_{ij})=\beta_1week_{ij} + \beta_2treatment_{i}\times week_{ij}+ \beta_3gender_i\times treatment_i+ \beta_4age_i\times treatment_i$  
+According to the exploratory data analysis, the interaction between treatment and gender, and treatment and age are potentially interesting. Here we shall test if they, along with the interaction term between treatment and week, are needed:  
+$H_0:\beta_2=\beta_3=\beta_4=0$  
+$H_1:H_0$ is not true. 
 ```{r}
-#aids <- read_csv(here::here("data/aids.csv"))
-aids <- read_csv("~/Documents/Stats-112-Final-Project/data/aids.csv")
+aids <- read_csv(here::here("data/aids.csv"))
+#aids <- read_csv("~/Documents/Stats-112-Final-Project/data/aids.csv")
 
 aids %<>% 
   mutate(treatment = factor(treatment, levels = c(1, 2, 3, 4)),
@@ -36,8 +40,9 @@ summary(model_rand)
 
 anova(model_rand, model_rand_interaction)
 ```
-The interaction terms have uneven significance across the treatments. Treatment 2 does not seem to change over time, and only Treatment 4 shows a significant difference in change over time with regard to gender. The ANOVA tests show that the model with the interaction terms is needed and the reduced model is inadequate.
+The interaction terms have uneven significance across the treatments. Treatment 2 does not seem to change over time, and only Treatment 4 shows a significant difference in change over time with regard to gender. The ANOVA test shows that the model with the interaction terms is needed and the reduced model is inadequate.
 
+The EDA shows us that for certain combinations of treatments and genders, such as treatment 4 for females and treatment 2 for males, the log_cd4 count dramatically decreases around 2/3rds of the way into the study. This suggests that a linear spline model may be appropriate.
 
 ```{r}
 aids <- aids %>% 
