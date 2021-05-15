@@ -119,32 +119,46 @@ There is statistical evidence that beta_5 != 0 and we should reject the null hyp
 
 ```{r}
 aids <- aids %>% 
-  mutate(kt1 = if_else(week >= 10 & week<20 , week, 0))
+  mutate(kt_1 = if_else(week>10, week-10, 0))
 aids <- aids %>% 
-  mutate(kt2 = if_else(week >= 20 , week, 0))
-
-model2 <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment, 
+  mutate(kt_2 = if_else(week>20, week-20, 0))
+model1 <- lme(log_cd4 ~ week + treatment + kt_1 + kt_2 + week:treatment + kt_1:treatment + kt_2:treatment, 
                data = aids, 
-               random = ~ week + kt1 + kt2|id, 
-               method = "REML", 
-               control = ctrl)
-model2_age <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment + age:treatment, 
+               random = ~ week + kt_1 + kt_2|id, 
+               method = "ML", 
+               control = lmeControl(maxIter = 100, msMaxIter = 100))
+model2 <- lme(log_cd4 ~ week + treatment + kt_1 + kt_2 + week:treatment + kt_1:treatment, 
                data = aids, 
-               random = ~ week + kt1 + kt2|id, 
-               method = "REML", 
-               control = ctrl)
+               random = ~ week + kt_1 + kt_2|id, 
+               method = "ML", 
+               control = lmeControl(maxIter = 100, msMaxIter = 100))
+summary(model1)
 summary(model2)
-summary(model2_age)
-
-model2_ml <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment, 
-               data = aids, 
-               random = ~ week + kt1 + kt2|id, 
-               method = "ML", 
-               control = ctrl)
-model2_age_ml <- lme(log_cd4 ~ week + kt1 + kt2 + week:treatment + kt1:treatment + kt2:treatment + age:treatment, 
-               data = aids, 
-               random = ~ week + kt1 + kt2|id, 
-               method = "ML", 
-               control = ctrl)
-anova(model_splines2, model2_ml, model2_age_ml)
+anova(model1, model101)
 ```
+Equation for model1: 
+$ E(log(cd4)_{ij}) = \beta_1 + \beta_2 Week_{ij} +\beta_3 I(Treatment = 2) + \beta_4 I(Treatment = 3) +\beta_5I(Treatment = 4) +\beta_6(Week_{ij}-10)_+ + \beta_7(Week_{ij}-20)_+ +\beta_8 Week_{ij}\times I(Treatment = 2) +\beta_9 Week_{ij}\times I(Treatment = 3) +\beta_{10} Week_{ij}\times I(Treatment = 4) +\beta_{11} (Week_{ij}-10)_+ \times I(Treatment = 2)  +\beta_{12} (Week_{ij}-10)_+ \times I(Treatment = 3) +\beta_{13} (Week_{ij}-10)_+ \times I(Treatment = 4) +\beta_{14} (Week_{ij}-20)_+ \times I(Treatment = 2)  +\beta_{15} (Week_{ij}-20)_+ \times I(Treatment = 3) +\beta_{16} (Week_{ij}-20)_+ \times I(Treatment = 4)$
+
+Equation for model2:
+$ E(log(cd4)_{ij}) = \beta_1 + \beta_2 Week_{ij} +\beta_3 I(Treatment = 2) + \beta_4 I(Treatment = 3) +\beta_5I(Treatment = 4) +\beta_6(Week_{ij}-10)_+ +\beta_7 (Week_{ij}-20)_+ +\beta_8 Week_{ij}\times I(Treatment = 2) +\beta_9 Week_{ij}\times I(Treatment = 3) +\beta_{10} Week_{ij}\times I(Treatment = 4) +\beta_{11} (Week_{ij}-10)_+ \times I(Treatment = 2)  +\beta_{12} (Week_{ij}-10)_+ \times I(Treatment = 3) +\beta_{13} (Week_{ij}-10)_+ \times I(Treatment = 4)$
+
+The first model includes the interaction term between the 2nd knot term and the treatment, while the second one doesn't.  
+The null hypothesis to test if the interaction is needed is that $$ \beta_{14} + \beta_{15} + \beta{16} = 0$$, which means that the reduced model is sufficient.
+From the anova test, the p-value is 0.466.  So we fail to reject the null, and the reduced model without the 2nd knot-term/treatment interaction is sufficient.
+
+```{r}
+model3<- lme(log_cd4 ~ week + treatment + kt_1 + kt_2 + week:treatment + kt_1:treatment + age:treatment, 
+               data = aids, 
+               random = ~ week + kt_1 + kt_2|id, 
+               method = "ML", 
+               control = lmeControl(maxIter = 100, msMaxIter = 100))
+
+summary(model3)
+anova(amodel3, amodel2)
+```
+
+The equation for model3 is:
+$ E(log(cd4)_{ij}) = \beta_1 + \beta_2 Week_{ij} +\beta_3 I(Treatment = 2) + \beta_4 I(Treatment = 3) +\beta_5I(Treatment = 4) +\beta_6(Week_{ij}-10)_+ +\beta_7(Week_{ij}-20)_+ +\beta_8 Week_{ij}\times I(Treatment = 2) +\beta_9 Week_{ij}\times I(Treatment = 3) +\beta_{10} Week_{ij}\times I(Treatment = 4) +\beta_{11} (Week_{ij}-10)_+ \times I(Treatment = 2)  +\beta_{12} (Week_{ij}-10)_+ \times I(Treatment = 3) +\beta_{13} (Week_{ij}-10)_+ \times I(Treatment = 4) +\beta_{14} Age_i \times I(Treatment = 1)  +\beta_{15} Age_i \times I(Treatment = 2) +\beta_{16} Age_i \times I(Treatment = 3) +\beta_{17} Age_i \times I(Treatment = 4)$
+
+This new model has an age/treatment interaction term.  Comparing this to model 2, we can test the null hypothesis $$\beta_{14} = \beta_{15} = \beta_{16} = \beta_{17} = 0$$.
+From the anova test, the p-value is 0.0016 < 0.05, so we can reject the null hypothesis, and conclude that the age/treatment interaction term is significant.
