@@ -1,0 +1,85 @@
+---
+title: "Residual Analysis"
+author: "Hagen Atkeson, Mandy Woo, Allison Mariko Dayoan"
+date: "5/21/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(nlme)
+library(here)
+library(mgcv)
+
+aids <- read_csv(here::here("data/aids.csv"))
+#aids <- read_csv("~/Documents/Stats-112-Final-Project/data/aids.csv")
+
+aids %<>% 
+  mutate(treatment = factor(treatment, levels = c(1, 2, 3, 4)),
+         gender = factor(gender, levels = c("male", "female")))
+```
+
+
+### Residual analysis for the parametric model:
+
+```{r}
+# create model
+model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment + age:treatment,
+                              data = aids,
+                              random = ~ week | id,
+                              method = "ML")
+
+# get population residual
+res_population <- residuals(model_rand_interaction, type = "response", level = 0)
+
+# transformed residuals
+Sigma_i <- extract.lme.cov(model_rand_interaction, aids)
+L_i <- t(chol(Sigma_i)) 
+res_transformed <- solve(L_i) %*% res_population
+
+# histogram
+tibble(r_star = res_transformed) %>% 
+  ggplot(aes(x = r_star)) +
+  geom_histogram(aes(y = stat(density)), bins = 14, color = "black", fill = "gray") +
+  geom_function(fun = dnorm, color = "blue") +
+  labs(x = "Residuals", y = "Density")
+
+# QQPlot
+tibble(r_star = res_transformed) %>% 
+  ggplot(aes(sample = r_star)) +
+  geom_qq_line(color = "blue") +
+  geom_qq(shape = 1) +
+  labs(x = "Quantiles of Standard Normal", y = "Quantiles of Transformed Residuals")
+
+```
+The QQPlot shows us that the transformed residuals have heavier tails than what would be expected for data from the Normal distribution, and that perhaps the assumption of normality is invalid.
+
+```{r}
+# scatter plot of predicted value vs. residuals
+
+mu_hat <- fitted(model_rand_interaction, level = 0)
+mu_hat_transformed <- solve(L_i) %*% mu_hat
+
+tibble(x = mu_hat_transformed, y = res_transformed) %>% 
+  ggplot(aes(x = x, y = y)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_point(shape = 1) +
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(x = "Transformed Predicted Value", y = "Transformed Residual")
+
+# scatter plot of time vs. residuals
+
+time <- aids$week
+time_transformed <- solve(L_i) %*% time
+
+tibble(x = time_transformed, y = res_transformed) %>% 
+  ggplot(aes(x = x, y = y)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_point(shape = 1) +
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(x = "Transformed Time", y = "Transformed Residual")
+```
+Both scatterplots show that the mean of the transformed residuals stays approximately zero in regard to the predicted value and over time.
+
+### Residual analysis for the linear spline model:
