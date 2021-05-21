@@ -21,20 +21,21 @@ aids %<>%
 ```
 
 
-### Residual analysis for the parametric model:
+When exploring the residual analysis for the model, we found that adding a quadratic term dramatically improved the semi-variogram.
 
 ```{r}
 # create model
-model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment + age:treatment,
+
+model_rand_q <- lme(log_cd4 ~ week + I(week^2) + treatment:week + gender:treatment + age:treatment,
                               data = aids,
                               random = ~ week | id,
                               method = "ML")
 
 # get population residual
-res_population <- residuals(model_rand_interaction, type = "response", level = 0)
+res_population <- residuals(model_rand_q, type = "response", level = 0)
 
 # transformed residuals
-Sigma_i <- extract.lme.cov(model_rand_interaction, aids)
+Sigma_i <- extract.lme.cov(model_rand_q, aids)
 L_i <- t(chol(Sigma_i)) 
 res_transformed <- solve(L_i) %*% res_population
 
@@ -58,7 +59,7 @@ The QQPlot shows us that the transformed residuals have heavier tails than what 
 ```{r}
 # scatter plot of predicted value vs. residuals
 
-mu_hat <- fitted(model_rand_interaction, level = 0)
+mu_hat <- fitted(model_rand_q, level = 0)
 mu_hat_transformed <- solve(L_i) %*% mu_hat
 
 tibble(x = mu_hat_transformed, y = res_transformed) %>% 
@@ -80,11 +81,19 @@ tibble(x = time_transformed, y = res_transformed) %>%
   geom_smooth(method = "loess", se = FALSE) +
   labs(x = "Transformed Time", y = "Transformed Residual")
 ```
-Both scatterplots show that the mean of the transformed residuals stays approximately zero in regard to the predicted value and over time.
+Both scatterplots show that the mean of the transformed residuals stays approximately zero in regard to the predicted value and over time. This indicates that the assumed model of variance induced by the linear mixed-effe is adequate.
 
 ```{r}
 # Semi-variogram
-
+Variogram(model_rand_q,
+          data = aids,
+          form = ~ week | id,
+          resType = "normalized") %>% 
+  as_tibble() %>% 
+  ggplot(aes(x = dist, y = variog)) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_point(shape = 1) +
+  geom_smooth(method = "loess", se = FALSE, span = 0.3)
 ```
 
 ```{r}
@@ -92,5 +101,3 @@ Both scatterplots show that the mean of the transformed residuals stays approxim
 
 ```
 
-
-### Residual analysis for the linear spline model:
