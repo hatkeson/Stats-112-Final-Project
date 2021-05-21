@@ -82,4 +82,15 @@ tibble(x = time_transformed, y = res_transformed) %>%
 ```
 Both scatterplots show that the mean of the transformed residuals stays approximately zero in regard to the predicted value and over time.
 
+```{r}
+# Semi-variogram
+
+```
+
+```{r}
+# Mahalanobis Distance
+
+```
+
+
 ### Residual analysis for the linear spline model:
