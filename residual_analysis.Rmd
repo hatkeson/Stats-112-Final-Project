@@ -99,5 +99,25 @@ Variogram(model_rand_q,
 ```{r}
 # Mahalanobis Distance
 
-```
+mahalanobis_data <- tibble(id = aids$id, r_star = res_transformed) %>% 
+  group_by(id) %>% 
+  nest()
 
+mahalanobis_data <- mahalanobis_data %>% 
+  mutate(df = map_dbl(data, ~nrow(.x)))
+
+mahalanobis_distance <- function(x){
+  x <- as.matrix(x)
+  t(x) %*% x
+}
+
+mahalanobis_data <- mahalanobis_data %>% 
+  mutate(d = map_dbl(data, ~mahalanobis_distance(.x)))
+
+mahalanobis_data <- mahalanobis_data %>% 
+  mutate(p_value = pchisq(d, df, lower.tail = FALSE))
+
+mahalanobis_data %>% 
+  filter(p_value < 0.05)
+```
+We can see that there are about 134 outliers who have p-values < 0.05, which is about twice the amount we would expect with 1309 subjects, and may account for the heavy tails in the Q-Q plot. 
