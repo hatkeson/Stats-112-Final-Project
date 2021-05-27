@@ -1,0 +1,25 @@
+---
+title: "Modeling - GLME, GEE"
+author: "Hagen Atkeson, Mariko Dayoan, Mandy Woo"
+date: "5/27/2021"
+output: html_document
+---
+
+```{r message = FALSE}
+library(tidyverse)
+library(magrittr)
+library(here)
+library(lme4)
+```
+
+```{r}
+aids <- read_csv(here::here("data/aids.csv"))
+#aids <- read_csv("~/Documents/Stats-112-Final-Project/data/aids.csv")
+
+aids %<>% 
+  mutate(cd4 = as.integer(exp(log_cd4) - 1))
+
+model <- glmer(cd4 ~ week + treatment:week + gender:treatment + age:treatment + (1 + week | id), 
+               data = aids)
+```
+
