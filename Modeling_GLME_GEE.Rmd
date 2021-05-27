@@ -17,9 +17,11 @@ aids <- read_csv(here::here("data/aids.csv"))
 #aids <- read_csv("~/Documents/Stats-112-Final-Project/data/aids.csv")
 
 aids %<>% 
-  mutate(cd4 = as.integer(exp(log_cd4) - 1))
+  mutate(cd4 = round(exp(log_cd4) - 1))
 
-model <- glmer(cd4 ~ week + treatment:week + gender:treatment + age:treatment + (1 + week | id), 
+model <- glmer(cd4 ~ week + treatment:week + gender:treatment + age:treatment + (1 + week | id),
+               family = poisson,
+               nAGQ = 0,
                data = aids)
 ```
 
