@@ -10,6 +10,7 @@ library(tidyverse)
 library(magrittr)
 library(here)
 library(lme4)
+library(nlme)
 ```
 
 ```{r}
@@ -17,11 +18,20 @@ aids <- read_csv(here::here("data/aids.csv"))
 #aids <- read_csv("~/Documents/Stats-112-Final-Project/data/aids.csv")
 
 aids %<>% 
-  mutate(cd4 = round(exp(log_cd4) - 1))
+  mutate(cd4 = round(exp(log_cd4) - 1),
+         week_sqr = week^2)
 
-model <- glmer(cd4 ~ week + treatment:week + gender:treatment + age:treatment + (1 + week | id),
+model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment + (1 + week | id),
                family = poisson,
                nAGQ = 0,
                data = aids)
-```
 
+model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
+                              data = aids,
+                              random = ~ week | id,
+                              method = "ML")
+
+summary(model_glmer)
+summary(model_lme)
+```
+When comparing AIC, the model produced by the `lme()` function has the lower value of 11998.15, compared to the model produced by `glmer()`, which is 52897.8. The lme model is therefore superior.
