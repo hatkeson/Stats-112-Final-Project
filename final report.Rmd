@@ -1,0 +1,78 @@
+---
+title: "Final Report - First Draft"
+author: "Hagen Atkeson, Allison Dayoan, Mandy Woo"
+date: "6/3/2021"
+output: html_document
+---
+
+## Exploratory Data Analysis
+
+```{r message = FALSE, echo = FALSE}
+library(tidyverse)
+library(magrittr)
+library(nlme)
+library(mgcv)
+library(GGally)
+
+aids <- read_csv(here::here("data/aids.csv"))
+#aids <- read_csv("~/Downloads/aids.csv")
+
+# change treatment to factor
+aids %<>% 
+  mutate(treatment = factor(treatment),
+         gender = factor(gender))
+
+glimpse(aids)
+
+# number of participants
+num_of_subjects <- n_distinct(aids$id)
+```
+There are 4 relevant covariates: treatment, age, gender, and week. The response variable is log_cd4. There are `r num_of_subjects` subjects.
+
+```{r}
+# spaghetti plot
+aids %>% 
+  ggplot(aes(x = week, y = log_cd4, group = id, color = treatment)) +
+  geom_point() + 
+  theme_light() +
+  labs(title = "Log(cd4) by Week")
+```
+Looking at the data by individual, there doesn't seem to be any significant outliers. The data is unbalanced, measurements were not taken at the same occasions. Therefore, Analysis of Response Profiles cannot be used.
+
+### Univariate Summaries
+```{r}
+summary(aids) %>% 
+  knitr::kable()
+
+aids_wide <- spread(aids, week, log_cd4)
+
+aids_wide %>% 
+  ggplot(aes(x = age)) +
+  geom_histogram() +
+  labs(x = "Age (Years)") +
+  ggtitle("Count of Ages") +
+  theme_light()
+
+aids %>% 
+  ggplot(aes(x = week)) +
+  geom_histogram() +
+  labs(x = "Time Since Baseline (weeks)") +
+  ggtitle("# of Participations During Each Week") +
+  theme_light()
+
+aids_wide %>% 
+  ggplot(aes(x = gender)) +
+  geom_bar() +
+  labs(x = "Gender") +
+  ggtitle("# Participants by Gender") +
+  theme_light()
+```
+The dataset has nearly eight times more males than females, in accordance with how males make up the majority of those suffering from AIDS. In terms of age, the majority of the participants are between 30 and 40, and the data is skewed right.  
+The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. The times when measurements are taken varies a lot.
+
+
+## LME Model
+
+## Residual Analysis
+
+## GLME Model
