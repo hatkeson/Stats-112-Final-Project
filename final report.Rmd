@@ -2,8 +2,14 @@
 title: "Final Report - First Draft"
 author: "Hagen Atkeson, Allison Dayoan, Mandy Woo"
 date: "6/3/2021"
-output: html_document
+output:
+     pdf_document:
+         latex_engine: xelatex
 ---
+```{r include = FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+```
 
 ## Exploratory Data Analysis
 
@@ -13,9 +19,10 @@ library(magrittr)
 library(nlme)
 library(mgcv)
 library(GGally)
+library(lme4)
 
-aids <- read_csv(here::here("data/aids.csv"))
-#aids <- read_csv("~/Downloads/aids.csv")
+#aids <- read_csv(here::here("data/aids.csv"))
+aids <- read_csv("~/Downloads/aids.csv")
 
 # change treatment to factor
 aids %<>% 
@@ -72,7 +79,54 @@ The measurement occasions span 40 weeks, with the mean being being less than 20,
 
 
 ## LME Model
+As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited to the data than a general least squares model. Here is the linear mixed effects model:  
+$E(log\_cd4_{ij})=\beta_1week_{ij} + \beta_2treatment_{i}\times week_{ij}+ \beta_3gender_i\times treatment_i+ \beta_4age_i\times treatment_i$  
+According to the exploratory data analysis, the interaction between treatment and gender, and treatment and age are potentially interesting. Here we shall test if they, along with the interaction term between treatment and week, are needed:  
+$H_0:\beta_2=\beta_3=\beta_4=0$  
+$H_1:H_0$ is not true. 
+```{r}
+aids %<>% 
+  mutate(treatment = factor(treatment, levels = c(1, 2, 3, 4)),
+         gender = factor(gender, levels = c("male", "female")))
+
+model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment + age:treatment,
+                              data = aids,
+                              random = ~ week | id,
+                              method = "ML")
+
+model_rand <- lme(log_cd4 ~ week,
+                  data = aids,
+                  random = ~ week | id,
+                  method = "ML")
+
+summary(model_rand_interaction)
+summary(model_rand)
+
+anova(model_rand, model_rand_interaction)
+```
+$With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that \beta_2=\beta_3=\beta_4=0.$
 
 ## Residual Analysis
 
+
 ## GLME Model
+```{r}
+aids %<>% 
+  mutate(cd4 = round(exp(log_cd4) - 1),
+         week_sqr = week^2)
+
+model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment + (1 + week | id),
+               family = poisson,
+               nAGQ = 0,
+               data = aids)
+
+model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
+                              data = aids,
+                              random = ~ week | id,
+                              method = "ML")
+
+summary(model_glmer)
+summary(model_lme)
+```
+When comparing AIC, the model produced by the `lme()` function has the lower value of 11998.15, compared to the model produced by `glmer()`, which is 52897.8. The lme model is therefore superior.
+
