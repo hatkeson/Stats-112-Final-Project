@@ -21,8 +21,8 @@ library(nlme)
 library(mgcv)
 library(GGally)
 
-#aids <- read_csv(here::here("data/aids.csv"))
-aids <- read_csv("~/Downloads/aids.csv")
+aids <- read_csv(here::here("data/aids.csv"))
+#aids <- read_csv("~/Downloads/aids.csv")
 
 # change treatment to factor
 aids %<>% 
@@ -79,12 +79,12 @@ The measurement occasions span 40 weeks, with the mean being being less than 20,
 
 ### Bivariate Summaries
 
-Relationship between covariates:
+Relationship between covariates:  
 ```{r echo = FALSE}
 ggpairs(aids, columns = c("treatment", "age", "week", "gender", "log_cd4"))
 ```
 
-CD4 counts over time, grouped by gender:
+CD4 counts over time, grouped by gender:  
 ```{r echo = FALSE}
 aids <- aids %>% 
   group_by(id) %>% 
@@ -103,7 +103,7 @@ aids %>%
 Treatment group 4 significantly decreases female CD4 count, while the same can be said about treatment group 2 for males.  Overall, Treatment group 3 increases average CD4 counts most for females, and all treatments decrease average CD4 counts for males.
 
 
-CD4 counts over time, grouped by age:
+CD4 counts over time, grouped by age:  
 ```{r echo = FALSE}
 aids <- aids %>% 
   mutate(age_group = case_when(age > 70 ~ "70+",
@@ -126,7 +126,7 @@ aids %>%
 ```
 Treatments 3 and 4 increase the average log CD4 count for the 60-70 age group.  Treatment 3 works best for the 20-30 age group.  For the 30-40 and 40-50 age group, all the treatments decreased average log CD4 count.  For the < 20 age group, only the 2nd treatment group increased average log CD4 count, but there are not many individuals in this age group studied.
 
-Mean log_cd4 by week
+Mean log_cd4 by week:  
 ```{r echo = FALSE}
 log_cd4_mean <- aids %>% group_by(treatment, week) %>%
   summarize(mean=mean(log_cd4, na.rm = TRUE))
