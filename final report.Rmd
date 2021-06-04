@@ -176,6 +176,9 @@ anova(model_rand, model_rand_interaction)
 ```
 With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that $\beta_2=\beta_3=\beta_4=0$.
 
+
+LME Model With Interaction Terms and Random Intercepts
+$E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$
 ```{r}
 aids %<>% 
   mutate(cd4 = round(exp(log_cd4) - 1),
@@ -185,11 +188,16 @@ model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment +
                               data = aids,
                               random = ~ week | id,
                               method = "ML")
-
-
 summary(model_lme)
 ```
 
+Test whether the squared week covariate is necessary
+$H_0$:week beta = 0 
+$H_1:H_0$ is not true. 
+```{r}
+anova(model_rand_interaction, model_lme)
+```
+With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis and conclude that including the week squared covariate is better.
 
 ## Residual Analysis
 ```{r}
