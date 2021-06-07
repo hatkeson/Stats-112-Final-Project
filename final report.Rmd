@@ -9,6 +9,7 @@ output:
 ```{r include = FALSE}
 knitr::opts_chunk$set(echo=FALSE)
 knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning = FALSE) 
 ```
 
 ## Exploratory Data Analysis
@@ -20,22 +21,17 @@ library(nlme)
 library(mgcv)
 library(GGally)
 library(lme4)
-
 aids <- read_csv(here::here("data/aids.csv"))
 #aids <- read_csv("~/Downloads/aids.csv")
-
 # change treatment to factor
 aids %<>% 
   mutate(treatment = factor(treatment),
          gender = factor(gender))
-
 # add a column for occasion
 aids <- aids %>% 
   group_by(id) %>% 
   mutate(occasion = row_number())
-
 glimpse(aids)
-
 # number of participants
 num_of_subjects <- n_distinct(aids$id)
 ```
@@ -65,23 +61,19 @@ Looking at the data by individual, there doesn't seem to be any significant outl
 ```{r}
 summary(aids) %>% 
   knitr::kable()
-
 aids_wide <- spread(aids, week, log_cd4)
-
 aids_wide %>% 
   ggplot(aes(x = age)) +
   geom_histogram() +
   labs(x = "Age (Years)") +
   ggtitle("Count of Ages") +
   theme_light()
-
 aids %>% 
   ggplot(aes(x = week)) +
   geom_histogram() +
   labs(x = "Time Since Baseline (weeks)") +
   ggtitle("# of Participations During Each Week") +
   theme_light()
-
 aids_wide %>% 
   ggplot(aes(x = gender)) +
   geom_bar() +
@@ -90,7 +82,6 @@ aids_wide %>%
   theme_light()
 ```
 The dataset has nearly eight times more males than females, in accordance with how males make up the majority of those suffering from AIDS. In terms of age, the majority of the participants are between 30 and 40, and the data is skewed right.  
-
 The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. The data is unbalanced, with observations roughly clustering around an interval of eight weeks.
 
 ### Bivariate Summaries
@@ -100,12 +91,13 @@ Relationship between covariates:
 ggpairs(aids, columns = c("treatment", "age", "week", "gender", "log_cd4"))
 ```
 
-CD4 counts over time, grouped by gender:  
 ```{r echo = FALSE}
 aids <- aids %>% 
   group_by(id) %>% 
   mutate(occasion = row_number())
+```
 
+```{r}
 aids %>% 
   group_by(treatment, gender, occasion) %>% 
   summarize(mean_cd4 = mean(log_cd4)) %>% 
@@ -152,7 +144,6 @@ ggplot(log_cd4_mean, aes(x = week, y = mean, group=treatment, color=as.factor(tr
 ```
 The mean of log cd4 of treatment1 is rarely increases over 4, but otherwise, there is not a big distinction between the mean log cd4.
 
-
 ## LME Model
 As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited to the data than a general least squares model. 
 
@@ -162,7 +153,7 @@ aids %<>%
          gender = factor(gender, levels = c("male", "female")))
 ```
 
-Model with Interaction Terms and Random Intercepts
+Model with Interaction Terms and Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_2treatment_{i}\times week_{ij}+ \beta_3gender_i\times treatment_i+ \beta_4age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment + age:treatment,
@@ -172,7 +163,7 @@ model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment
 summary(model_rand_interaction)
 ```
 
-Model with Random Intercepts
+Model with Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_rand <- lme(log_cd4 ~ week,
@@ -191,14 +182,12 @@ anova(model_rand, model_rand_interaction)
 ```
 With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that $\beta_2=\beta_3=\beta_4=0$.
 
-
-LME Model With Interaction Terms and Random Intercepts
+LME Model With Interaction Terms and Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$
 ```{r}
 aids %<>% 
   mutate(cd4 = round(exp(log_cd4) - 1),
          week_sqr = week^2)
-
 model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
                               data = aids,
                               random = ~ week | id,
@@ -214,7 +203,6 @@ anova(model_rand_interaction, model_lme)
 ```
 With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis and conclude that including the week squared covariate is better.
 
-
 ## GLME Model
 ```{r}
 aids %<>% 
@@ -222,7 +210,7 @@ aids %<>%
          week_sqr = week^2)
 ```
 
-GLME Model With Interaction Terms and Random Intercepts
+GLME Model With Interaction Terms and Random Intercepts\
 $E(cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment + (week | id),
@@ -232,14 +220,14 @@ model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment +
 summary(model_glmer)
 ```
 
-LME Model With Interaction Terms and Random Intercepts
+LME Model With Interaction Terms and Random Intercepts (As Seen Above)\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
                               data = aids,
                               random = ~ week | id,
                               method = "ML")
-summary(model_lme)
+#summary(model_lme)
 ```
 When comparing AIC, the model produced by the `lme()` function has the lower value of 11997.97, compared to the model produced by `glmer()`, which is 52894.5. The lme model is therefore superior.
 
@@ -249,7 +237,6 @@ res_population <- residuals(model_lme, type = "response", level = 0)
 Sigma_i <- extract.lme.cov(model_lme, aids)
 L_i <- t(chol(Sigma_i)) 
 res_transformed <- solve(L_i) %*% res_population
-
 # histogram
 tibble(r_star = res_transformed) %>% 
   ggplot(aes(x = r_star)) +
@@ -257,7 +244,6 @@ tibble(r_star = res_transformed) %>%
   geom_function(fun = dnorm, color = "blue") +
   labs(x = "Residuals", y = "Density") +
   ggtitle("Histogram of Transformed Residuals")
-
 # QQPlot
 tibble(r_star = res_transformed) %>% 
   ggplot(aes(sample = r_star)) +
@@ -279,7 +265,6 @@ tibble(x = mu_hat_transformed, y = res_transformed) %>%
   geom_smooth(method = "loess", se = FALSE) +
   labs(x = "Transformed Predicted Value", y = "Transformed Residual") +
   ggtitle("Predicted Values vs. Transformed Residuals")
-
 # scatter plot of time vs. residuals
 time <- aids$week
 time_transformed <- solve(L_i) %*% time
@@ -327,4 +312,3 @@ mahalanobis_data %>%
   filter(p_value < 0.05)
 ```
 We can see that there are about 134 outliers who have p-values < 0.05.  With 1309 subjects, we would expect 1309 * 0.05 = 66.  We have around twice this amount, which may account for the heavy tails in the Q-Q plot. 
-
