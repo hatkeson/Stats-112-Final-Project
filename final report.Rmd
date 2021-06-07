@@ -163,7 +163,7 @@ aids %<>%
          gender = factor(gender, levels = c("male", "female")))
 ```
 
-Model with Interaction Terms and Random Intercepts
+Model with Interaction Terms and Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_2treatment_{i}\times week_{ij}+ \beta_3gender_i\times treatment_i+ \beta_4age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment + age:treatment,
@@ -173,7 +173,7 @@ model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment
 summary(model_rand_interaction)
 ```
 
-Model with Random Intercepts
+Model with Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_rand <- lme(log_cd4 ~ week,
@@ -192,7 +192,7 @@ anova(model_rand, model_rand_interaction)
 ```
 With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that $\beta_2=\beta_3=\beta_4=0$.
 
-LME Model With Interaction Terms and Random Intercepts
+LME Model With Interaction Terms and Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$
 ```{r}
 aids %<>% 
@@ -221,7 +221,7 @@ aids %<>%
          week_sqr = week^2)
 ```
 
-GLME Model With Interaction Terms and Random Intercepts
+GLME Model With Interaction Terms and Random Intercepts\
 $E(cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment + (week | id),
@@ -231,7 +231,7 @@ model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment +
 summary(model_glmer)
 ```
 
-LME Model With Interaction Terms and Random Intercepts (As Seen Above)
+LME Model With Interaction Terms and Random Intercepts (As Seen Above)\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
