@@ -9,6 +9,7 @@ output:
 ```{r include = FALSE}
 knitr::opts_chunk$set(echo=FALSE)
 knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning = FALSE) 
 ```
 
 ## Exploratory Data Analysis
@@ -90,7 +91,6 @@ aids_wide %>%
   theme_light()
 ```
 The dataset has nearly eight times more males than females, in accordance with how males make up the majority of those suffering from AIDS. In terms of age, the majority of the participants are between 30 and 40, and the data is skewed right.  
-<<<<<<< HEAD
 The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. The data is unbalanced, with observations roughly clustering around an interval of eight weeks.
 
 ### Bivariate Summaries
@@ -100,19 +100,14 @@ Relationship between covariates:
 ggpairs(aids, columns = c("treatment", "age", "week", "gender", "log_cd4"))
 ```
 
-CD4 counts over time, grouped by gender:  
 ```{r echo = FALSE}
 aids <- aids %>% 
   group_by(id) %>% 
   mutate(occasion = row_number())
+```
 
-=======
-The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. The times when measurements are taken varies a lot.
-
-## Bivariate Summaries
 CD4 counts over time, grouped by gender:
 ```{r}
->>>>>>> 1302daf22b32ff83ee2157a3d20521d0c904fdf3
 aids %>% 
   group_by(treatment, gender, occasion) %>% 
   summarize(mean_cd4 = mean(log_cd4)) %>% 
@@ -125,13 +120,8 @@ aids %>%
 ```
 Treatment group 4 significantly decreases female CD4 count, while the same can be said about treatment group 2 for males.  Overall, Treatment group 3 increases average CD4 counts most for females, and all treatments decrease average CD4 counts for males.  This discrepancy indicates that a gender/treatment interaction term may be good to include in our model.
 
-<<<<<<< HEAD
 CD4 counts over time, grouped by age:  
 ```{r echo = FALSE}
-=======
-CD4 counts over time, grouped by age:
-```{r}
->>>>>>> 1302daf22b32ff83ee2157a3d20521d0c904fdf3
 aids <- aids %>% 
   mutate(age_group = case_when(age > 70 ~ "70+",
                                70 >= age & age > 60 ~ "60-70", 
@@ -150,7 +140,6 @@ aids %>%
   facet_wrap(~ treatment) +
   ggtitle("Mean Log Transformed CD4 Counts By Occasion Differentiated by Treatment and Age")
 ```
-<<<<<<< HEAD
 Treatments 3 and 4 increase the average log CD4 count for the 60-70 age group.  Treatment 3 works best for the 20-30 age group.  For the 30-40 and 40-50 age group, all the treatments decreased average log CD4 count.  For the < 20 age group, only the 2nd treatment group increased average log CD4 count, but there are not many individuals in this age group studied.
 
 Mean log_cd4 by week:  
@@ -164,9 +153,6 @@ ggplot(log_cd4_mean, aes(x = week, y = mean, group=treatment, color=as.factor(tr
   ggtitle("Mean Log Transformed CD4 Counts By Week Differentiated by Treatment")
 ```
 The mean of log cd4 of treatment1 is rarely increases over 4, but otherwise, there is not a big distinction between the mean log cd4.
-=======
-Treatments 3 and 4 increase the average log CD4 count for the 60-70 age group.  Treatment 3 works best for the 20-30 age group.  For the 30-40 and 40-50 age group, all the treatments decreased average log CD4 count.  For the < 20 age group, only the 2nd treatment group increased average log CD4 count, but there are not many individuals in this age group studied.  The difference in treatment effects for each age group shows that an age/treatment interaction term may be beneficial for the model.
->>>>>>> 1302daf22b32ff83ee2157a3d20521d0c904fdf3
 
 ## LME Model
 As the timing and number of measurement occasions differ by individual, a linear mixed-effects model would be more suited to the data than a general least squares model. 
@@ -206,7 +192,6 @@ anova(model_rand, model_rand_interaction)
 ```
 With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that $\beta_2=\beta_3=\beta_4=0$.
 
-
 LME Model With Interaction Terms and Random Intercepts
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$
 ```{r}
@@ -229,7 +214,6 @@ anova(model_rand_interaction, model_lme)
 ```
 With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis and conclude that including the week squared covariate is better.
 
-
 ## GLME Model
 ```{r}
 aids %<>% 
@@ -247,14 +231,14 @@ model_glmer <- glmer(cd4 ~ week + week_sqr + treatment:week + gender:treatment +
 summary(model_glmer)
 ```
 
-LME Model With Interaction Terms and Random Intercepts
+LME Model With Interaction Terms and Random Intercepts (As Seen Above)
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
                               data = aids,
                               random = ~ week | id,
                               method = "ML")
-summary(model_lme)
+#summary(model_lme)
 ```
 When comparing AIC, the model produced by the `lme()` function has the lower value of 11997.97, compared to the model produced by `glmer()`, which is 52894.5. The lme model is therefore superior.
 
