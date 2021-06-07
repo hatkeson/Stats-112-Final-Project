@@ -7,7 +7,7 @@ output:
          latex_engine: xelatex
 ---
 ```{r include = FALSE}
-knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(echo=FALSE, fig.width = 5, fig.height = 4)
 knitr::opts_chunk$set(message=FALSE)
 knitr::opts_chunk$set(warning = FALSE) 
 ```
@@ -35,7 +35,7 @@ glimpse(aids)
 # number of participants
 num_of_subjects <- n_distinct(aids$id)
 ```
-There are 4 relevant covariates: treatment, age, gender, and week. The response variable is log_cd4. There are `r num_of_subjects` subjects.
+There are 4 relevant covariates: treatment, age, gender, and week. The response variable is log_cd4. There are `r num_of_subjects` subjects.  The aim of this study is to compare the 4 treatment types and determine how the covariates affect the CD4 counts, as lower levels can be a warning sign for AIDS.
 
 ```{r}
 # spaghetti plot
@@ -44,7 +44,9 @@ aids %>%
   geom_point() + 
   theme_light() +
   labs(title = "Log(cd4) by Week")
-  
+ ```
+ 
+```{r}  
 # mean response time plot
 aids %>% 
   group_by(treatment, occasion) %>% 
@@ -55,6 +57,7 @@ aids %>%
   labs(x = "Occasion", y = "Mean Log(cd4)") +
   ggtitle("Mean Response Time Plot")
 ```
+
 Looking at the data by individual, there doesn't seem to be any significant outliers. The data is unbalanced, measurements were not taken at the same occasions. Therefore, Analysis of Response Profiles cannot be used.
 
 ### Univariate Summaries
@@ -62,18 +65,28 @@ Looking at the data by individual, there doesn't seem to be any significant outl
 summary(aids) %>% 
   knitr::kable()
 aids_wide <- spread(aids, week, log_cd4)
+```
+
+```{r}
 aids_wide %>% 
   ggplot(aes(x = age)) +
   geom_histogram() +
   labs(x = "Age (Years)") +
   ggtitle("Count of Ages") +
   theme_light()
+
+```
+
+```{r}
 aids %>% 
   ggplot(aes(x = week)) +
   geom_histogram() +
   labs(x = "Time Since Baseline (weeks)") +
   ggtitle("# of Participations During Each Week") +
   theme_light()
+```
+
+```{r}
 aids_wide %>% 
   ggplot(aes(x = gender)) +
   geom_bar() +
@@ -81,21 +94,20 @@ aids_wide %>%
   ggtitle("# Participants by Gender") +
   theme_light()
 ```
+
 The dataset has nearly eight times more males than females, in accordance with how males make up the majority of those suffering from AIDS. In terms of age, the majority of the participants are between 30 and 40, and the data is skewed right.  
 The measurement occasions span 40 weeks, with the mean being being less than 20, indicating that there are more observations in the first half of the study than the second half. The data is unbalanced, with observations roughly clustering around an interval of eight weeks.
 
 ### Bivariate Summaries
 
-Relationship between covariates:  
-```{r echo = FALSE}
-ggpairs(aids, columns = c("treatment", "age", "week", "gender", "log_cd4"))
-```
 
 ```{r echo = FALSE}
 aids <- aids %>% 
   group_by(id) %>% 
   mutate(occasion = row_number())
 ```
+
+CD4 counts over time, grouped by gender:
 
 ```{r}
 aids %>% 
@@ -108,6 +120,7 @@ aids %>%
   facet_wrap(~ gender) +
   ggtitle("Mean Log Transformed CD4 Counts By Occasion Differentiated by Treatment and Gender")
 ```
+
 Treatment group 4 significantly decreases female CD4 count, while the same can be said about treatment group 2 for males.  Overall, Treatment group 3 increases average CD4 counts most for females, and all treatments decrease average CD4 counts for males.  This discrepancy indicates that a gender/treatment interaction term may be good to include in our model.
 
 CD4 counts over time, grouped by age:  
@@ -130,6 +143,7 @@ aids %>%
   facet_wrap(~ treatment) +
   ggtitle("Mean Log Transformed CD4 Counts By Occasion Differentiated by Treatment and Age")
 ```
+
 Treatments 3 and 4 increase the average log CD4 count for the 60-70 age group.  Treatment 3 works best for the 20-30 age group.  For the 30-40 and 40-50 age group, all the treatments decreased average log CD4 count.  For the < 20 age group, only the 2nd treatment group increased average log CD4 count, but there are not many individuals in this age group studied.
 
 Mean log_cd4 by week:  
@@ -142,6 +156,7 @@ ggplot(log_cd4_mean, aes(x = week, y = mean, group=treatment, color=as.factor(tr
   labs(x='Week', y = 'Mean Log of CD4', color='Treatment') +
   ggtitle("Mean Log Transformed CD4 Counts By Week Differentiated by Treatment")
 ```
+
 The mean of log cd4 of treatment1 is rarely increases over 4, but otherwise, there is not a big distinction between the mean log cd4.
 
 ## LME Model
@@ -153,36 +168,44 @@ aids %<>%
          gender = factor(gender, levels = c("male", "female")))
 ```
 
-Model with Interaction Terms and Random Intercepts\
-$E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_2treatment_{i}\times week_{ij}+ \beta_3gender_i\times treatment_i+ \beta_4age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
+### Model with Interaction Terms and Random Intercepts\
+$E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3treatment_{i}\times week_{ij}+ \beta_4gender_i\times treatment_i+ \beta_5age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$ 
+
 ```{r}
 model_rand_interaction <- lme(log_cd4 ~ week + treatment:week + gender:treatment + age:treatment,
                               data = aids,
                               random = ~ week | id,
                               method = "ML")
-summary(model_rand_interaction)
+coef(summary(model_rand_interaction)) %>% 
+  knitr::kable()
+VarCorr(summary(model_rand_interaction)) %>% 
+  knitr::kable()
 ```
 
-Model with Random Intercepts\
+### Model with Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + b_{1i} + b_{2i} \times week_{ij}$ 
 ```{r}
 model_rand <- lme(log_cd4 ~ week,
                   data = aids,
                   random = ~ week | id,
                   method = "ML")
-summary(model_rand)
+coef(summary(model_rand)) %>% 
+  knitr::kable()
+VarCorr(summary(model_rand)) %>% 
+  knitr::kable()
 ```
 
-Testing Anova between With and Without Interaction Terms
+### Testing Anova between With and Without Interaction Terms
 According to the exploratory data analysis, the interaction between treatment and gender, and treatment and age are potentially interesting. Here we shall test if they, along with the interaction term between treatment and week, are needed:  
-$H_0:\beta_2=\beta_3=\beta_4=0$  
+$H_0:\beta_3=\beta_4=\beta_5=0$  
 $H_1:H_0$ is not true. 
 ```{r}
 anova(model_rand, model_rand_interaction)
 ```
-With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that $\beta_2=\beta_3=\beta_4=0$.
 
-LME Model With Interaction Terms and Random Intercepts\
+With a p-value of <.0001, there is statistical evidence needed to reject the null hypothesis that $\beta_2=\beta_3=\beta_4=0$.  Therefore, the inclusion of the interaction terms benefits our model.
+
+### LME Quadratic Model With Interaction Terms and Random Intercepts\
 $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treatment_{i}\times week_{ij}+ \beta_5gender_i\times treatment_i+ \beta_6age_i\times treatment_i + b_{1i} + b_{2i} \times week_{ij}$
 ```{r}
 aids %<>% 
@@ -192,11 +215,14 @@ model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment +
                               data = aids,
                               random = ~ week | id,
                               method = "ML")
-summary(model_lme)
+coef(summary(model_lme)) %>% 
+  knitr::kable()
+VarCorr(summary(model_lme)) %>% 
+  knitr::kable()
 ```
 
-Test whether the squared week covariate is necessary
-$H_0$:week beta = 0 
+### Test whether the squared week covariate is necessary
+$H_0: \beta_3 = 0$\
 $H_1:H_0$ is not true. 
 ```{r}
 anova(model_rand_interaction, model_lme)
@@ -229,14 +255,19 @@ model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment +
                               method = "ML")
 #summary(model_lme)
 ```
-When comparing AIC, the model produced by the `lme()` function has the lower value of 11997.97, compared to the model produced by `glmer()`, which is 52894.5. The lme model is therefore superior.
 
-## Residual Analysis
+When comparing AIC, the model produced by the `lme()` function has the lower value of 11997.97, compared to the model produced by `glmer()`, which is 52894.5. The lme model is therefore superior.  Additionally, the GLME model does not converge unless the code is modified, so it is better not to use it.
+
+## Residual Analysis on LME Model
 ```{r}
 res_population <- residuals(model_lme, type = "response", level = 0)
 Sigma_i <- extract.lme.cov(model_lme, aids)
 L_i <- t(chol(Sigma_i)) 
 res_transformed <- solve(L_i) %*% res_population
+```
+
+### Histogram
+```{r}
 # histogram
 tibble(r_star = res_transformed) %>% 
   ggplot(aes(x = r_star)) +
@@ -244,6 +275,11 @@ tibble(r_star = res_transformed) %>%
   geom_function(fun = dnorm, color = "blue") +
   labs(x = "Residuals", y = "Density") +
   ggtitle("Histogram of Transformed Residuals")
+
+```
+
+### QQ Plot
+```{r}
 # QQPlot
 tibble(r_star = res_transformed) %>% 
   ggplot(aes(sample = r_star)) +
@@ -252,8 +288,10 @@ tibble(r_star = res_transformed) %>%
   labs(x = "Quantiles of Standard Normal", y = "Quantiles of Transformed Residuals") +
   ggtitle("QQ Plot")
 ```
+
 The QQPlot shows us that the transformed residuals have heavier tails than what would be expected for data from the Normal distribution, and that perhaps the assumption of normality is invalid.
 
+### Scatter Plots
 ```{r}
 # scatter plot of predicted value vs. residuals
 mu_hat <- fitted(model_lme, level = 0)
@@ -265,6 +303,9 @@ tibble(x = mu_hat_transformed, y = res_transformed) %>%
   geom_smooth(method = "loess", se = FALSE) +
   labs(x = "Transformed Predicted Value", y = "Transformed Residual") +
   ggtitle("Predicted Values vs. Transformed Residuals")
+```
+
+```{r}
 # scatter plot of time vs. residuals
 time <- aids$week
 time_transformed <- solve(L_i) %*% time
@@ -276,8 +317,10 @@ tibble(x = time_transformed, y = res_transformed) %>%
   labs(x = "Transformed Time", y = "Transformed Residual") +
   ggtitle("Time vs. Transformed Residuals")
 ```
+
 Both scatterplots show that the mean of the transformed residuals stays approximately zero in regard to the predicted value and over time. This indicates that the assumed model of variance induced by the linear mixed-effects is adequate.
 
+### Semi-Variogram
 ```{r}
 # Semi-variogram
 Variogram(model_lme,
@@ -291,8 +334,10 @@ Variogram(model_lme,
   geom_smooth(method = "loess", se = FALSE, span = 0.3) +
   ggtitle("Semi-Variogram")
 ```
+
 The semi-variogram has randomly distributed points around the loess line, so there is no trend over time.  This indicates the model is good.
 
+### Mahalanobis Distances
 ```{r}
 # Mahalanobis Distance
 mahalanobis_data <- tibble(id = aids$id, r_star = res_transformed) %>% 
@@ -311,4 +356,5 @@ mahalanobis_data <- mahalanobis_data %>%
 mahalanobis_data %>% 
   filter(p_value < 0.05)
 ```
+
 We can see that there are about 134 outliers who have p-values < 0.05.  With 1309 subjects, we would expect 1309 * 0.05 = 66.  We have around twice this amount, which may account for the heavy tails in the Q-Q plot. 
