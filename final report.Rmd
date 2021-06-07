@@ -21,22 +21,17 @@ library(nlme)
 library(mgcv)
 library(GGally)
 library(lme4)
-
 aids <- read_csv(here::here("data/aids.csv"))
 #aids <- read_csv("~/Downloads/aids.csv")
-
 # change treatment to factor
 aids %<>% 
   mutate(treatment = factor(treatment),
          gender = factor(gender))
-
 # add a column for occasion
 aids <- aids %>% 
   group_by(id) %>% 
   mutate(occasion = row_number())
-
 glimpse(aids)
-
 # number of participants
 num_of_subjects <- n_distinct(aids$id)
 ```
@@ -69,7 +64,6 @@ Looking at the data by individual, there doesn't seem to be any significant outl
 ```{r}
 summary(aids) %>% 
   knitr::kable()
-
 aids_wide <- spread(aids, week, log_cd4)
 ```
 
@@ -80,6 +74,7 @@ aids_wide %>%
   labs(x = "Age (Years)") +
   ggtitle("Count of Ages") +
   theme_light()
+
 ```
 
 ```{r}
@@ -216,7 +211,6 @@ $E(log\_cd4_{ij})=\beta_1 + \beta_2week_{ij} + \beta_3week_{ij}^2 + \beta_4treat
 aids %<>% 
   mutate(cd4 = round(exp(log_cd4) - 1),
          week_sqr = week^2)
-
 model_lme <- lme(log_cd4 ~ week + week_sqr + treatment:week + gender:treatment + age:treatment,
                               data = aids,
                               random = ~ week | id,
@@ -281,6 +275,7 @@ tibble(r_star = res_transformed) %>%
   geom_function(fun = dnorm, color = "blue") +
   labs(x = "Residuals", y = "Density") +
   ggtitle("Histogram of Transformed Residuals")
+
 ```
 
 ### QQ Plot
@@ -363,4 +358,3 @@ mahalanobis_data %>%
 ```
 
 We can see that there are about 134 outliers who have p-values < 0.05.  With 1309 subjects, we would expect 1309 * 0.05 = 66.  We have around twice this amount, which may account for the heavy tails in the Q-Q plot. 
-
